@@ -1,162 +1,159 @@
 /**
  * gameEngine.js
- * 게임 단계, 명령, 점수, 제한시간 등 게임 규칙 전체를 담당
- *
- * 포즈 인식을 활용한 게임 로직을 관리하는 엔진
- * (현재는 기본 템플릿이므로 향후 게임 로직 추가 가능)
+ * Implements the fishing game state machine and physics.
  */
 
 class GameEngine {
   constructor() {
-    this.score = 0;
-    this.level = 1;
-    this.timeLimit = 0;
-    this.currentCommand = null;
-    this.isGameActive = false;
-    this.gameTimer = null;
-    this.onCommandChange = null; // 명령 변경 콜백
-    this.onScoreChange = null; // 점수 변경 콜백
-    this.onGameEnd = null; // 게임 종료 콜백
-  }
+    this.state = "IDLE"; // IDLE, READY, CAST, PLAYING, RESULT
+    this.gauge = 0; // 0 to 100
+    this.gaugeVelocity = 0;
+    this.targetZone = { min: 40, max: 60 };
+    this.catchTimer = 0;
+    this.catchDuration = 10.0; // Seconds to win
+    this.timeElapsed = 0;
 
-  /**
-   * 게임 시작
-   * @param {Object} config - 게임 설정 { timeLimit, commands }
-   */
-  start(config = {}) {
-    this.isGameActive = true;
-    this.score = 0;
-    this.level = 1;
-    this.timeLimit = config.timeLimit || 60; // 기본 60초
-    this.commands = config.commands || []; // 게임 명령어 배열
+    // Config
+    this.gravity = 15; // % per second (slower falling)
+    this.reelSpeed = 40; // % per second when reeling (faster rising)
+    this.isReeling = false;
 
-    if (this.timeLimit > 0) {
-      this.startTimer();
-    }
-
-    // 첫 번째 명령 발급 (게임 모드일 경우)
-    if (this.commands.length > 0) {
-      this.issueNewCommand();
-    }
-  }
-
-  /**
-   * 게임 중지
-   */
-  stop() {
-    this.isGameActive = false;
-    this.clearTimer();
-
-    if (this.onGameEnd) {
-      this.onGameEnd(this.score, this.level);
-    }
-  }
-
-  /**
-   * 타이머 시작
-   */
-  startTimer() {
-    this.gameTimer = setInterval(() => {
-      this.timeLimit--;
-
-      if (this.timeLimit <= 0) {
-        this.stop();
-      }
-    }, 1000);
-  }
-
-  /**
-   * 타이머 정리
-   */
-  clearTimer() {
-    if (this.gameTimer) {
-      clearInterval(this.gameTimer);
-      this.gameTimer = null;
-    }
-  }
-
-  /**
-   * 새로운 명령 발급
-   */
-  issueNewCommand() {
-    if (this.commands.length === 0) return;
-
-    const randomIndex = Math.floor(Math.random() * this.commands.length);
-    this.currentCommand = this.commands[randomIndex];
-
-    if (this.onCommandChange) {
-      this.onCommandChange(this.currentCommand);
-    }
-  }
-
-  /**
-   * 포즈 인식 결과 처리
-   * @param {string} detectedPose - 인식된 포즈 이름
-   */
-  onPoseDetected(detectedPose) {
-    if (!this.isGameActive) return;
-
-    // 현재 명령과 일치하는지 확인
-    if (this.currentCommand && detectedPose === this.currentCommand) {
-      this.addScore(10); // 점수 추가
-      this.issueNewCommand(); // 새로운 명령 발급
-    }
-  }
-
-  /**
-   * 점수 추가
-   * @param {number} points - 추가할 점수
-   */
-  addScore(points) {
-    this.score += points;
-
-    // 레벨업 로직 (예: 100점마다)
-    if (this.score >= this.level * 100) {
-      this.level++;
-    }
-
-    if (this.onScoreChange) {
-      this.onScoreChange(this.score, this.level);
-    }
-  }
-
-  /**
-   * 명령 변경 콜백 등록
-   * @param {Function} callback - (command) => void
-   */
-  setCommandChangeCallback(callback) {
-    this.onCommandChange = callback;
-  }
-
-  /**
-   * 점수 변경 콜백 등록
-   * @param {Function} callback - (score, level) => void
-   */
-  setScoreChangeCallback(callback) {
-    this.onScoreChange = callback;
-  }
-
-  /**
-   * 게임 종료 콜백 등록
-   * @param {Function} callback - (finalScore, finalLevel) => void
-   */
-  setGameEndCallback(callback) {
-    this.onGameEnd = callback;
-  }
-
-  /**
-   * 현재 게임 상태 반환
-   */
-  getGameState() {
-    return {
-      isActive: this.isGameActive,
-      score: this.score,
-      level: this.level,
-      timeRemaining: this.timeLimit,
-      currentCommand: this.currentCommand
+    // DOM Elements
+    this.ui = {
+      message: document.getElementById("message-area"),
+      targetZone: document.getElementById("target-zone"),
+      currentBar: document.getElementById("current-bar"),
+      time: document.getElementById("time"),
+      score: document.getElementById("score")
     };
+
+    this.setMessage("Press 'R' to Start");
+  }
+
+  setMessage(msg) {
+    if (this.ui.message) this.ui.message.textContent = msg;
+  }
+
+  handleInput(key, isPressed) {
+    if (!isPressed) {
+      if (key === "PageUp") this.isReeling = false;
+      return;
+    }
+
+    // Key Down events
+    switch (this.state) {
+      case "IDLE":
+        if (key.toLowerCase() === "r") {
+          this.transitionTo("READY");
+        }
+        break;
+      case "READY":
+        if (key.toLowerCase() === "c") {
+          this.transitionTo("CAST");
+        }
+        break;
+      case "PLAYING":
+        if (key === "PageUp") {
+          this.isReeling = true;
+        }
+        break;
+      case "RESULT":
+        // Wait for timer to go back to IDLE
+        break;
+    }
+  }
+
+  transitionTo(newState) {
+    this.state = newState;
+    console.log("State changed to:", newState);
+
+    switch (newState) {
+      case "IDLE":
+        this.setMessage("Press 'R' to Start");
+        this.resetGame();
+        break;
+      case "READY":
+        this.setMessage("Ready... Press 'C' to Cast!");
+        this.gauge = 0;
+        break;
+      case "CAST":
+        this.setMessage("Casting...");
+        // Simulate casting delay
+        setTimeout(() => {
+          this.transitionTo("PLAYING");
+        }, 2000);
+        break;
+      case "PLAYING":
+        this.setMessage("Fish On! Keep the Red Line in Green Zone! (PageUp to Reel)");
+        // Fixed target zone: 40-60%
+        // this.randomizeTargetZone();
+        this.gauge = 30; // Start at 30%
+        this.catchTimer = 0;
+        break;
+      case "RESULT":
+        // Message set by win/loss logic
+        setTimeout(() => {
+          this.transitionTo("IDLE");
+        }, 3000);
+        break;
+    }
+  }
+
+  // randomizeTargetZone removed
+
+  update(deltaTime) {
+    if (this.state === "PLAYING") {
+      // Physics
+      if (this.isReeling) {
+        this.gauge += this.reelSpeed * deltaTime;
+      } else {
+        this.gauge -= this.gravity * deltaTime;
+      }
+
+      // Constraints check (Win/Loss)
+      if (this.gauge <= 0 || this.gauge >= 100) {
+        this.gameResult(false, "Line Snapped!");
+        return;
+      }
+
+      // Target Zone Check
+      if (this.gauge >= this.targetZone.min && this.gauge <= this.targetZone.max) {
+        this.catchTimer += deltaTime;
+      }
+
+      // Win Check
+      if (this.catchTimer >= this.catchDuration) {
+        this.gameResult(true, "Fish Caught!");
+      }
+
+      // UI Update
+      if (this.ui.currentBar) {
+        this.ui.currentBar.style.height = `${this.gauge}%`;
+        // Change color based on tension?
+      }
+      if (this.ui.time) {
+        this.ui.time.textContent = this.catchTimer.toFixed(1);
+      }
+    }
+  }
+
+  gameResult(isSuccess, reason) {
+    if (isSuccess) {
+      this.setMessage(`SUCCESS: ${reason}`);
+      if (this.ui.score) this.ui.score.textContent = parseInt(this.ui.score.textContent) + 1;
+    } else {
+      this.setMessage(`FAILED: ${reason}`);
+    }
+    this.transitionTo("RESULT");
+  }
+
+  resetGame() {
+    this.gauge = 0;
+    this.catchTimer = 0;
+    if (this.ui.currentBar) this.ui.currentBar.style.height = "0%";
+    if (this.ui.time) this.ui.time.textContent = "0.0";
   }
 }
 
-// 전역으로 내보내기
+// Export
 window.GameEngine = GameEngine;
