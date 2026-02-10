@@ -209,7 +209,9 @@ h1 {
   text-align: center;
   box-shadow: 0 0 60px rgba(0, 255, 255, 0.2);
   width: 90%;
-  max-width: 500px;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 .overlay-content h2,
@@ -318,7 +320,7 @@ h1 {
   position: fixed;
   top: 20px;
   left: 20px;
-  width: 250px;
+  width: 280px;
   background-color: rgba(26, 26, 40, 0.95);
   border: 2px solid #00ffff;
   /* Cyan */
@@ -362,17 +364,21 @@ h1 {
 }
 
 .key {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background-color: #333;
   border: 1px solid #00ffff;
   border-radius: 4px;
-  padding: 2px 6px;
+  padding: 2px 4px;
   font-weight: bold;
   font-family: 'Courier New', Courier, monospace;
   color: #00ffff;
   min-width: 18px;
+  height: 18px;
   text-align: center;
   box-shadow: 2px 2px 0 rgba(0, 255, 255, 0.2);
+  font-size: 0.8rem;
 }
 
 .hidden {

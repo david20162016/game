@@ -14,9 +14,12 @@
     <ul>
       <li><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span>
         &nbsp; Move Circle</li>
-      <li><span class="key">E</span> &nbsp; Use Shield (🛡️)</li>
-      <li><span class="key">💰</span> &nbsp; Collect Coins</li>
-      <li><span class="key">🛒</span> &nbsp; Visit Store to upgrade</li>
+      <li><span class="key">E</span> &nbsp; Shield | <span class="key">Q</span> &nbsp; Slower | <span
+          class="key">R</span> &nbsp; Shrink</li>
+      <li><span class="key">Shift</span> &nbsp; Turbo | <span class="key">F</span> &nbsp; Bomb | <span
+          class="key">G</span> &nbsp; Ghost</li>
+      <li><span class="key">M</span> &nbsp; Magnet | <span class="key">V</span> &nbsp; x2 Coin | <span
+          class="key">X</span> &nbsp; Decoy</li>
     </ul>
     <p>1 Coin = 10 Store Credits!</p>
   </div>
@@ -47,19 +50,51 @@
 
       <div class="shop-items">
         <div class="shop-item">
-          <div class="item-info">
-            <b style="color: #00ffff;">Shield</b>
-            <span>5s protection from villains</span>
-          </div>
+          <div class="item-info"><b style="color: #00ffff;">Shield (E)</b><span>5s Invincibility</span></div>
           <button type="button" class="buy-btn" onclick="gameEngine.buyItem('shield')">20 🪙</button>
         </div>
-
         <div class="shop-item">
-          <div class="item-info">
-            <b style="color: #ff00ff;">Revive Potion</b>
-            <span>Restart from where you died</span>
-          </div>
+          <div class="item-info"><b style="color: #ff00ff;">Revive Potion</b><span>Restart from death</span></div>
           <button type="button" class="buy-btn" onclick="gameEngine.buyItem('potion')">40 🪙</button>
+        </div>
+        <div class="shop-item">
+          <div class="item-info"><b style="color: #00ff00;">Time Slower (Q)</b><span>8s - 50% Villain Speed</span></div>
+          <button type="button" class="buy-btn" onclick="gameEngine.buyItem('timer')">30 🪙</button>
+        </div>
+        <div class="shop-item">
+          <div class="item-info"><b style="color: #ff8800;">Shrink Potion (R)</b><span>10s - 50% Size</span></div>
+          <button type="button" class="buy-btn" onclick="gameEngine.buyItem('shrink')">25 🪙</button>
+        </div>
+        <div class="shop-item">
+          <div class="item-info"><b style="color: #66ccff;">Turbo Boosters (Shift)</b><span>10s - +40% Speed</span>
+          </div>
+          <button type="button" class="buy-btn" onclick="gameEngine.buyItem('turbo')">20 🪙</button>
+        </div>
+        <div class="shop-item">
+          <div class="item-info"><b style="color: #ff3333;">Flash Bomb (F)</b><span>Clear all Villains</span></div>
+          <button type="button" class="buy-btn" onclick="gameEngine.buyItem('bomb')">50 🪙</button>
+        </div>
+        <div class="shop-item">
+          <div class="item-info"><b style="color: #ffffff;">Ghost Cape (G)</b><span>3s - Phase through enemies</span>
+          </div>
+          <button type="button" class="buy-btn" onclick="gameEngine.buyItem('ghost')">45 🪙</button>
+        </div>
+        <div class="shop-item">
+          <div class="item-info"><b style="color: #ffd700;">Coin Magnet (M)</b><span>15s - Attract Coins</span></div>
+          <button type="button" class="buy-btn" onclick="gameEngine.buyItem('magnet')">35 🪙</button>
+        </div>
+        <div class="shop-item">
+          <div class="item-info"><b style="color: #ffff00;">Double Value (V)</b><span>20s - Coins x2 (20c)</span></div>
+          <button type="button" class="buy-btn" onclick="gameEngine.buyItem('double')">40 🪙</button>
+        </div>
+        <div class="shop-item">
+          <div class="item-info"><b style="color: #00ffaa;">Lucky Clover</b><span>Pass - +30% Coin spawn</span></div>
+          <button type="button" class="buy-btn" onclick="gameEngine.buyItem('clover')">60 🪙</button>
+        </div>
+        <div class="shop-item">
+          <div class="item-info"><b style="color: #ffaa00;">Decoy Doll (X)</b><span>5s - Villains target decoy</span>
+          </div>
+          <button type="button" class="buy-btn" onclick="gameEngine.buyItem('decoy')">35 🪙</button>
         </div>
       </div>
 

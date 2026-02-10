@@ -43,7 +43,20 @@ class GameEngine {
     this.activeItemsPanel = document.getElementById("active-items");
 
     this.coins = parseInt(localStorage.getItem("circleSurvivorCoins") || "0");
-    this.inventory = JSON.parse(localStorage.getItem("circleSurvivorInventory") || '{"shield": 0, "potion": 0}');
+    const defaultInventory = {
+      shield: 0, potion: 0, timer: 0, shrink: 0,
+      turbo: 0, bomb: 0, ghost: 0, magnet: 0,
+      double: 0, clover: 0, decoy: 0
+    };
+    this.inventory = { ...defaultInventory, ...JSON.parse(localStorage.getItem("circleSurvivorInventory") || "{}") };
+
+    // Buff Timers (in seconds)
+    this.buffs = {
+      timer: 0, shrink: 0, turbo: 0,
+      magnet: 0, double: 0, ghost: 0,
+      decoy: 0, decoyX: 0, decoyY: 0
+    };
+
     this.updateStoreUI();
 
     // Load Player Image
@@ -68,11 +81,28 @@ class GameEngine {
   updateActiveItemsUI() {
     if (!this.activeItemsPanel) return;
     this.activeItemsPanel.innerHTML = "";
-    if (this.inventory.shield > 0) {
-      this.activeItemsPanel.innerHTML += `<div class="item-indicator item-shield">🛡️ Shields: ${this.inventory.shield} (Press E to use)</div>`;
-    }
+    const items = [
+      { id: 'shield', label: '🛡️ Shield', key: 'E', color: '#00ffff' },
+      { id: 'timer', label: '⏳ Slower', key: 'Q', color: '#00ff00' },
+      { id: 'shrink', label: '🤏 Shrink', key: 'R', color: '#ff8800' },
+      { id: 'turbo', label: '🚀 Turbo', key: 'Shift', color: '#66ccff' },
+      { id: 'bomb', label: '💣 Bomb', key: 'F', color: '#ff3333' },
+      { id: 'ghost', label: '👻 Ghost', key: 'G', color: '#ffffff' },
+      { id: 'magnet', label: '🧲 Magnet', key: 'M', color: '#ffd700' },
+      { id: 'double', label: '💰 x2 Coin', key: 'V', color: '#ffff00' },
+      { id: 'decoy', label: '🤡 Decoy', key: 'X', color: '#ffaa00' }
+    ];
+
+    items.forEach(item => {
+      if (this.inventory[item.id] > 0) {
+        let text = `${item.label}: ${this.inventory[item.id]}`;
+        if (item.id === 'potion') text = `🧪 Revive: ${this.inventory.potion}`;
+        this.activeItemsPanel.innerHTML += `<div class="item-indicator" style="border-color: ${item.color}; color: ${item.color}; box-shadow: 0 0 10px ${item.color};">${text}</div>`;
+      }
+    });
+
     if (this.inventory.potion > 0) {
-      this.activeItemsPanel.innerHTML += `<div class="item-indicator item-potion">🧪 Revives: ${this.inventory.potion} (Auto)</div>`;
+      this.activeItemsPanel.innerHTML += `<div class="item-indicator" style="border-color: #ff00ff; color: #ff00ff; box-shadow: 0 0 10px #ff00ff;">🧪 Revive: ${this.inventory.potion} (Auto)</div>`;
     }
   }
 
@@ -81,7 +111,11 @@ class GameEngine {
   }
 
   buyItem(type) {
-    const prices = { shield: 20, potion: 40 };
+    const prices = {
+      shield: 20, potion: 40, timer: 30, shrink: 25,
+      turbo: 20, bomb: 50, ghost: 45, magnet: 35,
+      double: 40, clover: 60, decoy: 35
+    };
     if (this.coins >= prices[type]) {
       this.coins -= prices[type];
       this.inventory[type]++;
@@ -150,7 +184,11 @@ class GameEngine {
     // }
 
     // Input
-    this.input = { w: false, a: false, s: false, d: false, e: false };
+    this.input = {
+      w: false, a: false, s: false, d: false,
+      e: false, q: false, r: false, shift: false,
+      f: false, g: false, m: false, v: false, x: false
+    };
   }
 
   useShield() {
@@ -258,25 +296,38 @@ class GameEngine {
       dy /= length;
     }
 
-    this.player.x += dx * this.player.speed * deltaTime;
-    this.player.y += dy * this.player.speed * deltaTime;
+    // Normal Movement Speed
+    let currentSpeed = this.player.speed;
+    if (this.buffs.turbo > 0) currentSpeed *= 1.4;
 
-    // Manual Shield Trigger (Press E)
-    if (this.input.e && this.inventory.shield > 0 && !this.isShieldActive) {
-      this.useShield();
-    }
+    this.player.x += dx * currentSpeed * deltaTime;
+    this.player.y += dy * currentSpeed * deltaTime;
+
+    // Handle Active Items (Hotkeys)
+    this.handleActiveItems();
+
+    // Player Size (Shrink)
+    this.player.radius = this.buffs.shrink > 0 ? 8 : 15;
 
     // Boundary Check
     this.player.x = Math.max(this.player.radius, Math.min(this.canvas.width - this.player.radius, this.player.x));
     this.player.y = Math.max(this.player.radius, Math.min(this.canvas.height - this.player.radius, this.player.y));
 
     // 3. Enemy Spawning
+    this.coinTimer += deltaTime;
+    let coinInterval = 1.5;
+    if (this.inventory.clover > 0) coinInterval /= 1.3; // 30% faster coins
+
+    if (this.coinTimer >= coinInterval) {
+      this.spawnCoin();
+      this.coinTimer = 0;
+    }
+
     this.spawnTimer += deltaTime;
     if (this.spawnTimer >= this.spawnInterval) {
       this.spawnEnemy();
       this.spawnTimer = 0;
-      // Difficulty: Increase spawn rate slightly over time
-      if (this.spawnInterval > 0.3) this.spawnInterval -= 0.01;
+      if (this.spawnInterval > 0.3) this.spawnInterval -= 0.005; // Slightly slower difficulty curve
     }
 
     // 4. Enemy Movement & Collision
@@ -301,24 +352,32 @@ class GameEngine {
         (this.player.x - enemy.x) ** 2 + (this.player.y - enemy.y) ** 2
       );
       if (dist < this.player.radius + enemy.radius) {
-        if (!this.isShieldActive) {
+        if (!this.isShieldActive && this.buffs.ghost <= 0) {
           this.gameOver();
         }
       }
     }
 
-    // 5. Coin Spawning & Collection
-    this.coinTimer += deltaTime;
-    if (this.coinTimer >= 1.5) {
-      this.spawnCoin();
-      this.coinTimer = 0;
-    }
-
+    // 5. Coin Interaction
     for (let i = this.collectables.length - 1; i >= 0; i--) {
       const coin = this.collectables[i];
+
+      // Magnet Effect
+      if (this.buffs.magnet > 0) {
+        const dX = this.player.x - coin.x;
+        const dY = this.player.y - coin.y;
+        const dist = Math.sqrt(dX * dX + dY * dY);
+        if (dist < 150) {
+          coin.x += (dX / dist) * 200 * deltaTime;
+          coin.y += (dY / dist) * 200 * deltaTime;
+        }
+      }
+
       const dist = Math.sqrt((this.player.x - coin.x) ** 2 + (this.player.y - coin.y) ** 2);
       if (dist < this.player.radius + coin.radius) {
-        this.coins += 10;
+        let val = 10;
+        if (this.buffs.double > 0) val = 20;
+        this.coins += val;
         this.updateStoreUI();
         this.collectables.splice(i, 1);
         continue;
@@ -327,7 +386,53 @@ class GameEngine {
       if (coin.life <= 0) this.collectables.splice(i, 1);
     }
 
-    // 6. Shield Timer
+    // 6. Buff Updates
+    this.updateBuffs(deltaTime);
+  }
+
+  handleActiveItems() {
+    // Each key press consumes item and starts buff
+    if (this.input.e && this.inventory.shield > 0 && !this.isShieldActive) this.useShield();
+    if (this.input.q && this.inventory.timer > 0 && this.buffs.timer <= 0) this.useItem('timer', 8);
+    if (this.input.r && this.inventory.shrink > 0 && this.buffs.shrink <= 0) this.useItem('shrink', 10);
+    if (this.input.shift && this.inventory.turbo > 0 && this.buffs.turbo <= 0) this.useItem('turbo', 10);
+    if (this.input.f && this.inventory.bomb > 0) this.useFlashBomb();
+    if (this.input.g && this.inventory.ghost > 0 && this.buffs.ghost <= 0) this.useItem('ghost', 3);
+    if (this.input.m && this.inventory.magnet > 0 && this.buffs.magnet <= 0) this.useItem('magnet', 15);
+    if (this.input.v && this.inventory.double > 0 && this.buffs.double <= 0) this.useItem('double', 20);
+    if (this.input.x && this.inventory.decoy > 0 && this.buffs.decoy <= 0) this.useDecoy();
+  }
+
+  useItem(type, duration) {
+    this.inventory[type]--;
+    this.buffs[type] = duration;
+    this.updateStoreUI();
+  }
+
+  useFlashBomb() {
+    this.inventory.bomb--;
+    this.enemies = [];
+    this.updateStoreUI();
+  }
+
+  useDecoy() {
+    this.inventory.decoy--;
+    this.buffs.decoy = 5;
+    this.buffs.decoyX = this.player.x;
+    this.buffs.decoyY = this.player.y;
+    this.updateStoreUI();
+  }
+
+  updateBuffs(deltaTime) {
+    for (let key in this.buffs) {
+      if (key.includes('X') || key.includes('Y')) continue;
+      if (this.buffs[key] > 0) {
+        this.buffs[key] -= deltaTime;
+        if (this.buffs[key] <= 0) this.buffs[key] = 0;
+      }
+    }
+
+    // Shield is special state but integrated logic
     if (this.isShieldActive) {
       this.shieldTime -= deltaTime;
       if (this.shieldTime <= 0) this.isShieldActive = false;
@@ -356,13 +461,17 @@ class GameEngine {
       case 3: x = -radius; y = Math.random() * this.canvas.height; break;
     }
 
-    // Target a random point on the opposite side (or generally towards center to make it harder)
-    // Let's target somewhat near the player to make it interesting
-    const targetX = Math.random() * this.canvas.width;
-    const targetY = Math.random() * this.canvas.height;
+    // Target
+    let targetX = this.player.x;
+    let targetY = this.player.y;
+    if (this.buffs.decoy > 0) {
+      targetX = this.buffs.decoyX;
+      targetY = this.buffs.decoyY;
+    }
 
     const angle = Math.atan2(targetY - y, targetX - x);
-    const speed = 150 + Math.random() * 100 + (this.score * 5); // Speed increases with score
+    let speed = 150 + Math.random() * 100 + (this.score * 5);
+    if (this.buffs.timer > 0) speed *= 0.5;
 
     this.enemies.push({
       x: x,
@@ -403,6 +512,9 @@ class GameEngine {
         drawSize
       );
     } else {
+      // Ghost Effect Visual
+      if (this.buffs.ghost > 0) this.ctx.globalAlpha = 0.5;
+
       // Fallback to circle
       this.ctx.beginPath();
       this.ctx.arc(this.player.x, this.player.y, this.player.radius, 0, Math.PI * 2);
@@ -410,6 +522,19 @@ class GameEngine {
       this.ctx.fill();
       this.ctx.strokeStyle = "white";
       this.ctx.lineWidth = 2;
+      this.ctx.stroke();
+      this.ctx.closePath();
+
+      this.ctx.globalAlpha = 1.0;
+    }
+
+    // Draw Decoy
+    if (this.buffs.decoy > 0) {
+      this.ctx.beginPath();
+      this.ctx.arc(this.buffs.decoyX, this.buffs.decoyY, 15, 0, Math.PI * 2);
+      this.ctx.fillStyle = "rgba(255, 170, 0, 0.6)";
+      this.ctx.fill();
+      this.ctx.strokeStyle = "white";
       this.ctx.stroke();
       this.ctx.closePath();
     }
