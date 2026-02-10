@@ -28,6 +28,7 @@
     <button type="button" id="startBtn" onclick="init()">Start Game</button>
     <button type="button" id="stopBtn" onclick="gameEngine.gameOver()" disabled>Finish</button>
     <button type="button" id="shopBtn" onclick="gameEngine.toggleStore(true)">Store</button>
+    <button type="button" id="muteBtn" onclick="gameEngine.toggleMute()">🔊 Sound On</button>
   </div>
 
   <div id="active-items"></div>
@@ -137,6 +138,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
 
   <!-- 애플리케이션 모듈 -->
+  <script src="./js/audioManager.js"></script>
   <script src="./js/stabilizer.js"></script>
   <script src="./js/poseEngine.js"></script>
   <script src="./js/gameEngine.js"></script>

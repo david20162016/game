@@ -16,6 +16,10 @@ class GameEngine {
     this.leaderboardList = document.getElementById("leaderboard-list");
     this.loadLeaderboard();
 
+    // Audio
+    this.audio = new AudioManager();
+    this.audio.init();
+
     // UI Elements for Game Over
     this.overlay = document.getElementById("game-over-overlay");
     this.reviveSection = document.getElementById("revive-section");
@@ -120,9 +124,19 @@ class GameEngine {
       this.coins -= prices[type];
       this.inventory[type]++;
       this.updateStoreUI();
+      this.audio.playPurchase();
       alert("Purchase successful!");
     } else {
+      this.audio.playNoMoney();
       alert("No money!");
+    }
+  }
+
+  toggleMute() {
+    const isMuted = this.audio.toggleMute();
+    const muteBtn = document.getElementById("muteBtn");
+    if (muteBtn) {
+      muteBtn.innerText = isMuted ? "🔇 Muted" : "🔊 Sound On";
     }
   }
 
@@ -203,6 +217,8 @@ class GameEngine {
   gameOver() {
     if (!this.isPlaying) return;
     this.isPlaying = false;
+    this.audio.playDeath();
+    this.audio.stopBGM();
 
     // UI Updates
     const stopBtn = document.getElementById("stopBtn");
@@ -236,6 +252,8 @@ class GameEngine {
 
   confirmRevive(choice) {
     if (choice && this.inventory.potion > 0) {
+      this.audio.playRevive();
+      this.audio.startBGM();
       this.inventory.potion--;
       this.updateStoreUI();
       this.isShieldActive = true;
@@ -259,6 +277,8 @@ class GameEngine {
   start() {
     this.reset();
     this.isPlaying = true;
+    this.audio.init(); // Ensure ctx is ready
+    this.audio.startBGM();
     if (this.overlay) this.overlay.classList.add("hidden");
     if (this.storeModal) this.storeModal.classList.add("hidden");
   }
@@ -378,6 +398,7 @@ class GameEngine {
         let val = 10;
         if (this.buffs.double > 0) val = 20;
         this.coins += val;
+        this.audio.playCoin();
         this.updateStoreUI();
         this.collectables.splice(i, 1);
         continue;
@@ -406,12 +427,14 @@ class GameEngine {
   useItem(type, duration) {
     this.inventory[type]--;
     this.buffs[type] = duration;
+    this.audio.playActivation();
     this.updateStoreUI();
   }
 
   useFlashBomb() {
     this.inventory.bomb--;
     this.enemies = [];
+    this.audio.playActivation();
     this.updateStoreUI();
   }
 
@@ -420,6 +443,7 @@ class GameEngine {
     this.buffs.decoy = 5;
     this.buffs.decoyX = this.player.x;
     this.buffs.decoyY = this.player.y;
+    this.audio.playActivation();
     this.updateStoreUI();
   }
 
