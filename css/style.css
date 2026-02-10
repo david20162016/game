@@ -1,127 +1,389 @@
-/* 페이지 전체 스타일과 게임 UI 디자인 */
+/* Circle Survivor - Overhauled Visuals & Store */
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: 100vh;
   margin: 0;
   padding: 20px;
-  gap: 16px;
+  gap: 15px;
+  background-color: #0f0f1a;
+  /* Very dark blue-black */
+  color: white;
+  overflow: hidden;
 }
 
 h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: 32px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #00ffff;
+  /* Cyan */
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
 }
 
+/* Controls & UI */
 .button-container {
-  display: flex;
-  gap: 10px;
-}
-
-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #fff;
-}
-
-button:hover {
-  background-color: #f0f0f0;
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.canvas-container {
-  position: relative;
-  display: inline-block;
-}
-
-#canvas {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  display: block;
-}
-
-#max-prediction {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-size: 16px;
-  font-weight: bold;
-  pointer-events: none;
-}
-
-#label-container {
+  position: fixed;
+  top: 20px;
+  right: 280px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 200px;
+  gap: 10px;
+  z-index: 1001;
+  width: 150px;
 }
 
-#label-container div {
-  padding: 8px;
-  background-color: #f5f5f5;
+.button-container button {
+  width: 100%;
+  padding: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: 2px solid #00ffff;
   border-radius: 4px;
-  text-align: center;
+  background-color: rgba(0, 40, 40, 0.8);
+  color: #00ffff;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/* Game UI Styles */
-#game-ui {
+.button-container button:hover:not(:disabled) {
+  background-color: #00ffff;
+  color: black;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+.button-container button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: #444;
+  color: #444;
+}
+
+#shopBtn {
+  border-color: #ffd700 !important;
+  color: #ffd700 !important;
+  background-color: rgba(40, 40, 0, 0.8) !important;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.2) !important;
+}
+
+#shopBtn:hover {
+  background-color: #ffd700 !important;
+  color: black !important;
+}
+
+/* The "White Box" Overhaul */
+.game-container {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  margin-top: 20px;
+  justify-content: center;
+  width: 100%;
 }
 
-#message-area {
-  font-size: 20px;
-  font-weight: bold;
-  color: #333;
-  min-height: 30px;
-}
-
-.gauge-container {
+.canvas-wrapper {
   position: relative;
-  width: 40px;
-  height: 300px;
-  border: 2px solid #333;
+  border: 20px solid #ffffff;
+  /* Thick White Box */
   border-radius: 8px;
-  background-color: #eee;
-  overflow: hidden;
+  box-shadow: 0 0 50px rgba(255, 255, 255, 0.3), 0 0 100px rgba(0, 0, 0, 0.8);
+  background-color: #000;
+  width: fit-content;
+  max-width: 90vw;
+  max-height: 75vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.target-zone {
-  position: absolute;
-  width: 100%;
-  bottom: 40%;
-  height: 20%;
-  background-color: rgba(0, 255, 0, 0.5);
-  /* Semi-transparent green */
-  z-index: 1;
+#canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
-.current-bar {
-  position: absolute;
-  bottom: 0;
+#info-panel {
+  display: flex;
+  gap: 30px;
+  margin-top: -10px;
+  z-index: 10;
+}
+
+#score-board,
+#coin-board {
+  font-size: 24px;
+  font-weight: bold;
+  font-family: 'Courier New', Courier, monospace;
+  background-color: rgba(0, 0, 0, 0.9);
+  padding: 10px 25px;
+  border-radius: 0 0 12px 12px;
+  border: 2px solid #00ffff;
+  border-top: none;
+}
+
+#score-board {
+  color: #00ffff;
+  text-shadow: 0 0 8px #00ffff;
+}
+
+#coin-board {
+  color: #ffd700;
+  border-color: #ffd700;
+  text-shadow: 0 0 8px #ffd700;
+}
+
+/* Items UI */
+#active-items {
+  position: fixed;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  z-index: 1002;
+}
+
+.item-indicator {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 2px solid white;
+  font-weight: bold;
+  text-transform: uppercase;
+  animation: pulse 1s infinite alternate;
+}
+
+.item-shield {
+  border-color: #00ffff;
+  color: #00ffff;
+  box-shadow: 0 0 15px #00ffff;
+}
+
+.item-potion {
+  border-color: #ff00ff;
+  color: #ff00ff;
+  box-shadow: 0 0 15px #ff00ff;
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* Modals & Overlays */
+#game-over-overlay,
+#store-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
-  background-color: #ff0000;
-  /* Red */
-  transition: height 0.1s linear;
-  /* Smooth transition */
-  z-index: 0;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(8px);
+}
+
+.overlay-content,
+.modal-content {
+  background-color: #1a1a1a;
+  border: 4px solid #ffffff;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 0 60px rgba(0, 255, 255, 0.2);
+  width: 90%;
+  max-width: 500px;
+}
+
+.overlay-content h2,
+.modal-content h2 {
+  font-size: 42px;
+  margin: 0 0 20px 0;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+}
+
+.overlay-content h2 {
+  color: #ff00ff;
+  text-shadow: 0 0 15px #ff00ff;
+}
+
+.modal-content h2 {
+  color: #ffd700;
+  text-shadow: 0 0 15px #ffd700;
+}
+
+.shop-items {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 25px 0;
+}
+
+.shop-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+.shop-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.item-info {
+  text-align: left;
+}
+
+.item-info b {
+  font-size: 1.2rem;
+  display: block;
+}
+
+.item-info span {
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+.buy-btn {
+  padding: 10px 20px !important;
+  width: auto !important;
+  margin: 0 !important;
+}
+
+/* Leaderboard Overhaul */
+#leaderboard {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 250px;
+  background-color: rgba(26, 26, 40, 0.95);
+  border: 2px solid #ff00ff;
+  /* Purple */
+  border-radius: 12px;
+  padding: 15px;
+  color: white;
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+  z-index: 1000;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+#leaderboard h3 {
+  margin: 0 0 15px 0;
+  text-align: center;
+  color: #ff00ff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  border-bottom: 2px solid rgba(255, 0, 255, 0.3);
+  padding-bottom: 8px;
+}
+
+#leaderboard-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  margin-bottom: 8px;
+  background-color: rgba(255, 0, 255, 0.05);
+  border-radius: 6px;
+}
+
+#leaderboard-list li .score {
+  color: #ff00ff;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* Instructions Styling */
+#instructions {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 250px;
+  background-color: rgba(26, 26, 40, 0.95);
+  border: 2px solid #00ffff;
+  /* Cyan */
+  border-radius: 12px;
+  padding: 15px;
+  color: white;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+  z-index: 1000;
+}
+
+#instructions h3 {
+  margin: 0 0 15px 0;
+  text-align: center;
+  color: #00ffff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+  padding-bottom: 8px;
+}
+
+#instructions ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#instructions li {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+#instructions p {
+  margin-top: 15px;
+  font-size: 0.85rem;
+  color: #ffd700;
+  text-align: center;
+  font-weight: bold;
+}
+
+.key {
+  display: inline-block;
+  background-color: #333;
+  border: 1px solid #00ffff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-weight: bold;
+  font-family: 'Courier New', Courier, monospace;
+  color: #00ffff;
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 2px 2px 0 rgba(0, 255, 255, 0.2);
+}
+
+.hidden {
+  display: none !important;
+}
+
+#player-name {
+  width: 100%;
+  padding: 12px;
+  background-color: #000;
+  border: 2px solid #ff00ff;
+  color: #ff00ff;
+  margin-bottom: 20px;
 }

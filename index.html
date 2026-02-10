@@ -8,29 +8,94 @@
 </head>
 
 <body>
-  <h1>A FunFisherman's Life</h1>
-  <div class="button-container">
-    <button type="button" id="startBtn" onclick="init()">Start</button>
-    <button type="button" id="stopBtn" onclick="stop()" disabled>Stop</button>
+  <h1>Circle Survivor</h1>
+  <div id="instructions">
+    <h3>Instructions</h3>
+    <ul>
+      <li><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span>
+        &nbsp; Move Circle</li>
+      <li><span class="key">E</span> &nbsp; Use Shield (🛡️)</li>
+      <li><span class="key">💰</span> &nbsp; Collect Coins</li>
+      <li><span class="key">🛒</span> &nbsp; Visit Store to upgrade</li>
+    </ul>
+    <p>1 Coin = 10 Store Credits!</p>
   </div>
-  <div class="canvas-container">
-    <canvas id="canvas"></canvas>
-    <div id="max-prediction"></div>
-  </div>
-  <div id="label-container"></div>
 
-  <!-- Game UI -->
-  <div id="game-ui">
-    <div id="message-area">Press Start Button</div>
-    <div class="gauge-container">
-      <div id="target-zone" class="target-zone" style="bottom: 40%; height: 20%;"></div>
-      <div id="current-bar" class="current-bar" style="height: 0%;"></div>
+  <div class="button-container">
+    <button type="button" id="startBtn" onclick="init()">Start Game</button>
+    <button type="button" id="stopBtn" onclick="gameEngine.gameOver()" disabled>Finish</button>
+    <button type="button" id="shopBtn" onclick="gameEngine.toggleStore(true)">Store</button>
+  </div>
+
+  <div id="active-items"></div>
+
+  <div class="game-container">
+    <div id="info-panel">
+      <div id="score-board">Time: <span id="time-score">0.0</span>s</div>
+      <div id="coin-board">Coins: <span id="store-coins">0</span></div>
     </div>
-    <div>
-      <span>Score: <span id="score">0</span></span>
-      <span>Time: <span id="time">0.0</span>s</span>
+    <div class="canvas-wrapper">
+      <canvas id="canvas"></canvas>
     </div>
   </div>
+
+  <!-- Store Modal -->
+  <div id="store-modal" class="hidden">
+    <div class="modal-content">
+      <h2>Game Store</h2>
+      <p>Your Balance: <span id="modal-coins" style="color: #ffd700; font-weight: bold;">0</span> Coins</p>
+
+      <div class="shop-items">
+        <div class="shop-item">
+          <div class="item-info">
+            <b style="color: #00ffff;">Shield</b>
+            <span>5s protection from villains</span>
+          </div>
+          <button type="button" class="buy-btn" onclick="gameEngine.buyItem('shield')">20 🪙</button>
+        </div>
+
+        <div class="shop-item">
+          <div class="item-info">
+            <b style="color: #ff00ff;">Revive Potion</b>
+            <span>Restart from where you died</span>
+          </div>
+          <button type="button" class="buy-btn" onclick="gameEngine.buyItem('potion')">40 🪙</button>
+        </div>
+      </div>
+
+      <button type="button" onclick="gameEngine.toggleStore(false)">Back to Game</button>
+    </div>
+  </div>
+
+  <!-- Game Over Overlay -->
+  <div id="game-over-overlay" class="hidden">
+    <div class="overlay-content">
+      <div id="revive-section" class="hidden">
+        <h2>Revive?</h2>
+        <p>Do you want to use your revival potion?</p>
+        <button type="button" onclick="gameEngine.confirmRevive(true)">Yes, Revive! (🧪-1)</button>
+        <button type="button" onclick="gameEngine.confirmRevive(false)">No, Finish</button>
+      </div>
+
+      <div id="name-section" class="hidden">
+        <h2>Game Over</h2>
+        <p>Survival Time: <span id="final-score">0.0</span>s</p>
+        <input type="text" id="player-name" placeholder="Enter your name" maxlength="10">
+        <button type="button" id="submit-score-btn">Submit Score</button>
+        <button type="button" id="restart-btn" onclick="init()">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaderboard UI -->
+  <div id="leaderboard">
+    <h3>Top Survivors</h3>
+    <ul id="leaderboard-list">
+      <li>No scores yet</li>
+    </ul>
+  </div>
+
+  <div id="label-container"></div>
 
   <!-- Teachable Machine 라이브러리 -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>

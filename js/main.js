@@ -28,6 +28,7 @@ async function init() {
   try {
     // 1. GameEngine 초기화
     gameEngine = new GameEngine();
+    gameEngine.start();
 
     // 2. 키보드 이벤트 리스너 -> GameEngine에 연결
     window.addEventListener("keydown", handleKeyDown);
@@ -79,6 +80,7 @@ function gameLoop(timestamp) {
 
   if (gameEngine) {
     gameEngine.update(deltaTime);
+    gameEngine.draw();
   }
 
   animationFrameId = requestAnimationFrame(gameLoop);
