@@ -6,11 +6,60 @@
  */
 
 // 전역 변수
+let authManager;
 let poseEngine;
 let gameEngine;
 let stabilizer;
 let ctx;
 let labelContainer;
+
+// 1. AuthManager 초기화
+authManager = new AuthManager();
+
+/**
+ * Auth UI Helpers
+ */
+function showAuthTab(tab) {
+  const loginForm = document.getElementById('login-form');
+  const signupForm = document.getElementById('signup-form');
+  const tabLogin = document.getElementById('tab-login');
+  const tabSignup = document.getElementById('tab-signup');
+
+  if (tab === 'login') {
+    loginForm.classList.remove('hidden');
+    signupForm.classList.add('hidden');
+    tabLogin.classList.add('active');
+    tabSignup.classList.remove('active');
+  } else {
+    loginForm.classList.add('hidden');
+    signupForm.classList.remove('hidden');
+    tabLogin.classList.remove('active');
+    tabSignup.classList.add('active');
+  }
+}
+
+function handleLogin() {
+  const user = document.getElementById('login-username').value;
+  const pass = document.getElementById('login-password').value;
+  if (authManager.login(user, pass)) {
+    finishAuth();
+  }
+}
+
+function handleSignup() {
+  const user = document.getElementById('signup-username').value;
+  const pass = document.getElementById('signup-password').value;
+  if (authManager.register(user, pass)) {
+    showAuthTab('login');
+  }
+}
+
+function finishAuth() {
+  document.getElementById('auth-overlay').classList.add('hidden');
+  document.getElementById('logoutBtn').classList.remove('hidden');
+  // Initialize game components after login
+  initializeGame();
+}
 
 /**
  * 애플리케이션 초기화
@@ -18,13 +67,27 @@ let labelContainer;
 const startBtn = document.getElementById("startBtn");
 const stopBtn = document.getElementById("stopBtn");
 
-// 1. GameEngine 초기화 (Pre-initialize for Store/Upgrades access)
-let gameLoopStarted = false;
-gameEngine = new GameEngine();
 let lastTime = 0;
 let animationFrameId;
 
+function initializeGame() {
+  // 1. GameEngine 초기화 (Pre-initialize for Store access)
+  gameEngine = new GameEngine();
+}
+
+// Auto-login check
+window.onload = () => {
+  if (authManager.currentUser) {
+    finishAuth();
+  }
+};
+
 async function init() {
+  if (!authManager.currentUser) {
+    alert("Please login first!");
+    return;
+  }
+
   startBtn.disabled = true;
 
   try {
@@ -40,9 +103,6 @@ async function init() {
 
     stopBtn.disabled = false;
 
-    // PoseEngine related setup (ignored for now as per rules)
-    // If needed, can added back here later.
-
   } catch (error) {
     console.error("초기화 중 오류 발생:", error);
     alert("초기화에 실패했습니다. 콘솔을 확인하세요.");
@@ -57,10 +117,6 @@ function stop() {
 
   window.removeEventListener("keydown", handleKeyDown);
   window.removeEventListener("keyup", handleKeyUp);
-
-  if (gameEngine) {
-    // maybe added stop method if needed
-  }
 
   startBtn.disabled = false;
   stopBtn.disabled = true;
@@ -86,6 +142,9 @@ function gameLoop(timestamp) {
   animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-// Unused prediction callback logic for now
-function handlePrediction(predictions, pose) { }
-function drawPose(pose) { }
+// Global exposure for HTML onclick
+window.showAuthTab = showAuthTab;
+window.handleLogin = handleLogin;
+window.handleSignup = handleSignup;
+window.authManager = authManager;
+window.init = init;

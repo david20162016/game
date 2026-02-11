@@ -8,6 +8,9 @@ class GameEngine {
     this.canvas = document.getElementById("canvas");
     this.ctx = this.canvas.getContext("2d");
     this.scoreElement = document.getElementById("time-score");
+    this.levelElement = document.getElementById("current-level");
+    this.nextLevelValElement = document.getElementById("next-level-val");
+    this.levelUpOverlay = document.getElementById("level-up-overlay");
 
     // Set canvas size
     this.canvas.width = 1200;
@@ -44,25 +47,30 @@ class GameEngine {
     this.storeModal = document.getElementById("store-modal");
     this.storeCoinsElement = document.getElementById("store-coins");
     this.modalCoinsElement = document.getElementById("modal-coins");
-    this.upgradeModal = document.getElementById("upgrade-modal");
-    this.upgradeModalCoinsElement = document.getElementById("upgrade-modal-coins");
     this.activeItemsPanel = document.getElementById("active-items");
 
-    this.coins = parseInt(localStorage.getItem("circleSurvivorCoins") || "0");
-    const defaultInventory = {
-      shield: 0, potion: 0, timer: 0, shrink: 0,
-      turbo: 0, bomb: 0, ghost: 0, magnet: 0,
-      double: 0, clover: 0, decoy: 0
-    };
-    this.inventory = { ...defaultInventory, ...JSON.parse(localStorage.getItem("circleSurvivorInventory") || "{}") };
+    // Load User Data via AuthManager
+    const userData = authManager ? authManager.getUserData() : null;
 
-    // Upgrades (Level 0-5)
-    const defaultUpgrades = {
-      speed: 0,
-      size: 0
-    };
-    this.upgrades = { ...defaultUpgrades, ...JSON.parse(localStorage.getItem("circleSurvivorUpgrades") || "{}") };
-    this.playerColor = localStorage.getItem("circleSurvivorColor") || "#00ffff";
+    if (userData) {
+      this.coins = userData.coins || 0;
+      this.inventory = userData.inventory || {
+        shield: 0, potion: 0, timer: 0, shrink: 0,
+        turbo: 0, bomb: 0, ghost: 0, magnet: 0,
+        double: 0, clover: 0, decoy: 0
+      };
+      this.level = userData.level || 1;
+    } else {
+      // Fallback for non-authenticated (shouldn't happen with new flow)
+      this.coins = parseInt(localStorage.getItem("circleSurvivorCoins") || "0");
+      const defaultInventory = {
+        shield: 0, potion: 0, timer: 0, shrink: 0,
+        turbo: 0, bomb: 0, ghost: 0, magnet: 0,
+        double: 0, clover: 0, decoy: 0
+      };
+      this.inventory = { ...defaultInventory, ...JSON.parse(localStorage.getItem("circleSurvivorInventory") || "{}") };
+      this.level = 1;
+    }
 
     // Buff Timers (in seconds)
     this.buffs = {
@@ -72,6 +80,9 @@ class GameEngine {
     };
 
     this.updateStoreUI();
+    this.level = 1;
+    this.levelTime = 0;
+    this.LEVEL_DURATION = 30; // 30 seconds per level
 
     // Load Player Image
     this.playerImage = new Image();
@@ -87,66 +98,21 @@ class GameEngine {
   updateStoreUI() {
     if (this.storeCoinsElement) this.storeCoinsElement.innerText = this.coins;
     if (this.modalCoinsElement) this.modalCoinsElement.innerText = this.coins;
-    if (this.upgradeModalCoinsElement) this.upgradeModalCoinsElement.innerText = this.coins;
 
-    // Update Upgrade Text
-    const speedText = document.getElementById("speed-level-text");
-    if (speedText) speedText.innerText = `Level ${this.upgrades.speed} (Base: ${250 + this.upgrades.speed * 25})`;
-
-    const sizeText = document.getElementById("size-level-text");
-    if (sizeText) sizeText.innerText = `Level ${this.upgrades.size} (Radius: ${15 - this.upgrades.size * 1})`;
-
-    // Update Button Costs (Ensuring they stay 10 and 15)
-    const speedBtn = document.getElementById("speed-upgrade-btn");
-    if (speedBtn) speedBtn.innerText = `10 🪙`;
-    const sizeBtn = document.getElementById("size-upgrade-btn");
-    if (sizeBtn) sizeBtn.innerText = `15 🪙`;
-
-    localStorage.setItem("circleSurvivorCoins", this.coins);
-    localStorage.setItem("circleSurvivorInventory", JSON.stringify(this.inventory));
-    localStorage.setItem("circleSurvivorUpgrades", JSON.stringify(this.upgrades));
-    localStorage.setItem("circleSurvivorColor", this.playerColor);
+    if (authManager && authManager.currentUser) {
+      authManager.saveUserData({
+        coins: this.coins,
+        inventory: this.inventory,
+        level: this.level
+      });
+    } else {
+      localStorage.setItem("circleSurvivorCoins", this.coins);
+      localStorage.setItem("circleSurvivorInventory", JSON.stringify(this.inventory));
+    }
 
     this.updateActiveItemsUI();
   }
 
-  toggleUpgrade(show) {
-    if (this.upgradeModal) this.upgradeModal.classList.toggle("hidden", !show);
-    if (show) this.updateStoreUI();
-  }
-
-  buyUpgrade(type) {
-    const nextLevel = this.upgrades[type] + 1;
-    if (nextLevel > 5) {
-      alert("Max Level Reached!");
-      return;
-    }
-
-    const costs = { speed: 10, size: 15 };
-    if (this.coins >= costs[type]) {
-      this.coins -= costs[type];
-      this.upgrades[type] = nextLevel;
-
-      // Apply changes immediately to active player
-      if (this.player) {
-        this.player.radius = 15 - (this.upgrades.size * 1);
-        this.player.speed = 250 + (this.upgrades.speed * 25);
-      }
-
-      this.audio.playPurchase();
-      this.updateStoreUI();
-    } else {
-      this.audio.playNoMoney();
-      alert("No money!");
-    }
-  }
-
-  setPlayerColor(color) {
-    this.playerColor = color;
-    if (this.player) this.player.color = color;
-    this.updateStoreUI();
-    this.audio.playActivation();
-  }
 
   updateActiveItemsUI() {
     if (!this.activeItemsPanel) return;
@@ -244,6 +210,9 @@ class GameEngine {
     this.spawnTimer = 0;
     this.coinTimer = 0;
     this.spawnInterval = 1.0;
+    this.level = 1;
+    this.levelTime = 0;
+    if (this.levelElement) this.levelElement.innerText = "1";
 
     // Shield State
     this.isShieldActive = false;
@@ -253,9 +222,9 @@ class GameEngine {
     this.player = {
       x: this.canvas.width / 2,
       y: this.canvas.height / 2,
-      radius: 15 - (this.upgrades.size * 1),
-      speed: 250 + (this.upgrades.speed * 25),
-      color: this.playerColor
+      radius: 15,
+      speed: 250,
+      color: "#00ffff"
     };
 
     // Use shield if possible - Replaced with manual trigger below
@@ -353,6 +322,26 @@ class GameEngine {
     this.isPlaying = false;
   }
 
+  levelUp() {
+    if (this.level >= 25) return;
+    this.level++;
+    this.levelTime = 0;
+    if (this.levelElement) this.levelElement.innerText = this.level;
+    if (this.nextLevelValElement) this.nextLevelValElement.innerText = this.level;
+
+    // Show Level Up UI
+    if (this.levelUpOverlay) {
+      this.levelUpOverlay.classList.remove("hidden");
+      setTimeout(() => {
+        this.levelUpOverlay.classList.add("hidden");
+      }, 1500);
+    }
+
+    // Clear some enemies for a breath
+    this.enemies = this.enemies.slice(0, Math.floor(this.enemies.length / 2));
+    this.audio.playActivation(); // Or a level up sound if available
+  }
+
   handleInput(key, isPressed) {
     let k = key.toLowerCase();
 
@@ -378,7 +367,13 @@ class GameEngine {
 
     // 1. Update Score
     this.score += deltaTime;
+    this.levelTime += deltaTime;
     if (this.scoreElement) this.scoreElement.innerText = this.score.toFixed(1);
+
+    // Check for Level Up
+    if (this.level < 25 && this.levelTime >= this.LEVEL_DURATION) {
+      this.levelUp();
+    }
 
     // 2. Player Movement
     let dx = 0;
@@ -406,7 +401,7 @@ class GameEngine {
     this.handleActiveItems();
 
     // Player Size (Shrink Buff vs Permanent Upgrade)
-    const baseRadius = 15 - (this.upgrades.size * 1);
+    const baseRadius = 15;
     this.player.radius = this.buffs.shrink > 0 ? (baseRadius * 0.5) : baseRadius;
 
     // Boundary Check
@@ -427,7 +422,13 @@ class GameEngine {
     if (this.spawnTimer >= this.spawnInterval) {
       this.spawnEnemy();
       this.spawnTimer = 0;
-      if (this.spawnInterval > 0.3) this.spawnInterval -= 0.005; // Slightly slower difficulty curve
+
+      let baseInterval = 1.0;
+      if (this.spawnInterval > 0.3) this.spawnInterval -= 0.005;
+
+      // Level scaling for spawn rate
+      const levelSpawnMultiplier = Math.max(0.3, 1 - (this.level - 1) * 0.1);
+      this.spawnInterval = Math.max(0.2, (this.spawnInterval > 0.3 ? this.spawnInterval : 0.3) * levelSpawnMultiplier);
     }
 
     // 4. Enemy Movement & Collision
@@ -574,8 +575,14 @@ class GameEngine {
     }
 
     const angle = Math.atan2(targetY - y, targetX - x);
-    let speed = 150 + Math.random() * 100 + (this.score * 5);
+
+    // Difficulty Scaling
+    const speedMultiplier = 1 + (this.level - 1) * 0.25; // +25% speed per level
+    let speed = (150 + Math.random() * 100 + (this.score * 5)) * speedMultiplier;
     if (this.buffs.timer > 0) speed *= 0.5;
+
+    // Spawn rate scaling (implicit in update loop using level)
+    this.spawnIntervalMultiplier = Math.max(0.2, 1 - (this.level - 1) * 0.15); // -15% interval per level
 
     this.enemies.push({
       x: x,

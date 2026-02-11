@@ -14,7 +14,8 @@
     <ul>
       <li><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> /
         <span class="key">↑</span><span class="key">←</span><span class="key">↓</span><span class="key">→</span> &nbsp;
-        Move Circle</li>
+        Move Circle
+      </li>
       <li><span class="key">E</span> &nbsp; Shield | <span class="key">Q</span> &nbsp; Slower | <span
           class="key">R</span> &nbsp; Shrink</li>
       <li><span class="key">Shift</span> &nbsp; Turbo | <span class="key">F</span> &nbsp; Bomb | <span
@@ -29,8 +30,8 @@
     <button type="button" id="startBtn" onclick="init()">Start Game</button>
     <button type="button" id="stopBtn" onclick="gameEngine.gameOver()" disabled>Finish</button>
     <button type="button" id="shopBtn" onclick="gameEngine.toggleStore(true)">Store</button>
-    <button type="button" id="upgradeBtn" onclick="gameEngine.toggleUpgrade(true)">Upgrades</button>
     <button type="button" id="muteBtn" onclick="gameEngine.toggleMute()">🔊 Sound On</button>
+    <button type="button" id="logoutBtn" onclick="authManager.logout()" class="hidden">Logout</button>
   </div>
 
   <div id="active-items"></div>
@@ -39,6 +40,7 @@
     <div id="info-panel">
       <div id="score-board">Time: <span id="time-score">0.0</span>s</div>
       <div id="coin-board">Coins: <span id="store-coins">0</span></div>
+      <div id="level-board">Level: <span id="current-level">1</span></div>
     </div>
     <div class="canvas-wrapper">
       <canvas id="canvas"></canvas>
@@ -133,46 +135,38 @@
     </ul>
   </div>
 
-  <!-- Upgrade Modal -->
-  <div id="upgrade-modal" class="hidden">
-    <div class="modal-content">
-      <h2 style="color: #00ff00; text-shadow: 0 0 15px #00ff00;">Lab Upgrades</h2>
-      <p>Balance: <span id="upgrade-modal-coins" style="color: #ffd700; font-weight: bold;">0</span> Coins</p>
+  <!-- Level Up Overlay -->
+  <div id="level-up-overlay" class="hidden">
+    <div class="level-up-content">
+      <h2 class="level-up-text">LEVEL UP!</h2>
+      <p>Survivors Level: <span id="next-level-val">2</span></p>
+    </div>
+  </div>
 
-      <div class="shop-items">
-        <!-- Speed -->
-        <div class="shop-item">
-          <div class="item-info">
-            <b style="color: #00ff00;">Speed Multiplier</b>
-            <span id="speed-level-text">Level 0 (Base: 250)</span>
-          </div>
-          <button type="button" id="speed-upgrade-btn" class="buy-btn" onclick="gameEngine.buyUpgrade('speed')">10
-            🪙</button>
-        </div>
-        <!-- Size -->
-        <div class="shop-item">
-          <div class="item-info">
-            <b style="color: #ffd700;">Size Compression</b>
-            <span id="size-level-text">Level 0 (Radius: 15)</span>
-          </div>
-          <button type="button" id="size-upgrade-btn" class="buy-btn" onclick="gameEngine.buyUpgrade('size')">15
-            🪙</button>
-        </div>
-        <!-- Color -->
-        <div class="shop-item" style="flex-direction: column; align-items: flex-start; gap: 10px;">
-          <b style="color: #ffffff;">Circle Customization</b>
-          <div class="color-presets">
-            <div class="color-swatch" style="background: #00ffff;" onclick="gameEngine.setPlayerColor('#00ffff')"></div>
-            <div class="color-swatch" style="background: #ff00ff;" onclick="gameEngine.setPlayerColor('#ff00ff')"></div>
-            <div class="color-swatch" style="background: #ffd700;" onclick="gameEngine.setPlayerColor('#ffd700')"></div>
-            <div class="color-swatch" style="background: #00ff00;" onclick="gameEngine.setPlayerColor('#00ff00')"></div>
-            <div class="color-swatch" style="background: #ff3333;" onclick="gameEngine.setPlayerColor('#ff3333')"></div>
-            <div class="color-swatch" style="background: #ffffff;" onclick="gameEngine.setPlayerColor('#ffffff')"></div>
-          </div>
-        </div>
+  </div>
+
+  <!-- Auth Overlay -->
+  <div id="auth-overlay">
+    <div class="auth-box">
+      <h1>Circle Survivor</h1>
+      <div class="auth-tabs">
+        <button id="tab-login" class="auth-tab active" onclick="showAuthTab('login')">Login</button>
+        <button id="tab-signup" class="auth-tab" onclick="showAuthTab('signup')">Sign Up</button>
       </div>
 
-      <button type="button" onclick="gameEngine.toggleUpgrade(false)">Return to Surface</button>
+      <!-- Login Form -->
+      <div id="login-form" class="auth-form">
+        <input type="text" id="login-username" placeholder="Username" autocomplete="username">
+        <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+        <button type="button" class="auth-submit" onclick="handleLogin()">Enter the Arena</button>
+      </div>
+
+      <!-- Signup Form -->
+      <div id="signup-form" class="auth-form hidden">
+        <input type="text" id="signup-username" placeholder="Choose Username" autocomplete="username">
+        <input type="password" id="signup-password" placeholder="Choose Password" autocomplete="new-password">
+        <button type="button" class="auth-submit" onclick="handleSignup()">Create Account</button>
+      </div>
     </div>
   </div>
 
@@ -183,6 +177,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
 
   <!-- 애플리케이션 모듈 -->
+  <script src="./js/authManager.js"></script>
   <script src="./js/audioManager.js"></script>
   <script src="./js/stabilizer.js"></script>
   <script src="./js/poseEngine.js"></script>
