@@ -44,6 +44,8 @@ class GameEngine {
     this.storeModal = document.getElementById("store-modal");
     this.storeCoinsElement = document.getElementById("store-coins");
     this.modalCoinsElement = document.getElementById("modal-coins");
+    this.upgradeModal = document.getElementById("upgrade-modal");
+    this.upgradeModalCoinsElement = document.getElementById("upgrade-modal-coins");
     this.activeItemsPanel = document.getElementById("active-items");
 
     this.coins = parseInt(localStorage.getItem("circleSurvivorCoins") || "0");
@@ -53,6 +55,14 @@ class GameEngine {
       double: 0, clover: 0, decoy: 0
     };
     this.inventory = { ...defaultInventory, ...JSON.parse(localStorage.getItem("circleSurvivorInventory") || "{}") };
+
+    // Upgrades (Level 0-5)
+    const defaultUpgrades = {
+      speed: 0,
+      size: 0
+    };
+    this.upgrades = { ...defaultUpgrades, ...JSON.parse(localStorage.getItem("circleSurvivorUpgrades") || "{}") };
+    this.playerColor = localStorage.getItem("circleSurvivorColor") || "#00ffff";
 
     // Buff Timers (in seconds)
     this.buffs = {
@@ -77,9 +87,65 @@ class GameEngine {
   updateStoreUI() {
     if (this.storeCoinsElement) this.storeCoinsElement.innerText = this.coins;
     if (this.modalCoinsElement) this.modalCoinsElement.innerText = this.coins;
+    if (this.upgradeModalCoinsElement) this.upgradeModalCoinsElement.innerText = this.coins;
+
+    // Update Upgrade Text
+    const speedText = document.getElementById("speed-level-text");
+    if (speedText) speedText.innerText = `Level ${this.upgrades.speed} (Base: ${250 + this.upgrades.speed * 25})`;
+
+    const sizeText = document.getElementById("size-level-text");
+    if (sizeText) sizeText.innerText = `Level ${this.upgrades.size} (Radius: ${15 - this.upgrades.size * 1})`;
+
+    // Update Button Costs (Ensuring they stay 10 and 15)
+    const speedBtn = document.getElementById("speed-upgrade-btn");
+    if (speedBtn) speedBtn.innerText = `10 🪙`;
+    const sizeBtn = document.getElementById("size-upgrade-btn");
+    if (sizeBtn) sizeBtn.innerText = `15 🪙`;
+
     localStorage.setItem("circleSurvivorCoins", this.coins);
     localStorage.setItem("circleSurvivorInventory", JSON.stringify(this.inventory));
+    localStorage.setItem("circleSurvivorUpgrades", JSON.stringify(this.upgrades));
+    localStorage.setItem("circleSurvivorColor", this.playerColor);
+
     this.updateActiveItemsUI();
+  }
+
+  toggleUpgrade(show) {
+    if (this.upgradeModal) this.upgradeModal.classList.toggle("hidden", !show);
+    if (show) this.updateStoreUI();
+  }
+
+  buyUpgrade(type) {
+    const nextLevel = this.upgrades[type] + 1;
+    if (nextLevel > 5) {
+      alert("Max Level Reached!");
+      return;
+    }
+
+    const costs = { speed: 10, size: 15 };
+    if (this.coins >= costs[type]) {
+      this.coins -= costs[type];
+      this.upgrades[type] = nextLevel;
+
+      // Apply changes immediately to active player
+      if (this.player) {
+        this.player.radius = 15 - (this.upgrades.size * 1);
+        this.player.speed = 250 + (this.upgrades.speed * 25);
+      }
+
+      this.audio.playPurchase();
+      this.updateStoreUI();
+    } else {
+      this.audio.playNoMoney();
+      alert("No money!");
+    }
+  }
+
+  setPlayerColor(color) {
+    this.playerColor = color;
+    if (this.player) this.player.color = color;
+    this.updateStoreUI();
+    this.audio.playActivation();
   }
 
   updateActiveItemsUI() {
@@ -187,9 +253,9 @@ class GameEngine {
     this.player = {
       x: this.canvas.width / 2,
       y: this.canvas.height / 2,
-      radius: 15,
-      speed: 250,
-      color: "#00ffff"
+      radius: 15 - (this.upgrades.size * 1),
+      speed: 250 + (this.upgrades.speed * 25),
+      color: this.playerColor
     };
 
     // Use shield if possible - Replaced with manual trigger below
@@ -288,7 +354,20 @@ class GameEngine {
   }
 
   handleInput(key, isPressed) {
-    const k = key.toLowerCase();
+    let k = key.toLowerCase();
+
+    // Map Arrow Keys to WASD internally
+    const arrowMap = {
+      'arrowup': 'w',
+      'arrowdown': 's',
+      'arrowleft': 'a',
+      'arrowright': 'd'
+    };
+
+    if (arrowMap[k]) {
+      k = arrowMap[k];
+    }
+
     if (this.input.hasOwnProperty(k)) {
       this.input[k] = isPressed;
     }
@@ -326,8 +405,9 @@ class GameEngine {
     // Handle Active Items (Hotkeys)
     this.handleActiveItems();
 
-    // Player Size (Shrink)
-    this.player.radius = this.buffs.shrink > 0 ? 8 : 15;
+    // Player Size (Shrink Buff vs Permanent Upgrade)
+    const baseRadius = 15 - (this.upgrades.size * 1);
+    this.player.radius = this.buffs.shrink > 0 ? (baseRadius * 0.5) : baseRadius;
 
     // Boundary Check
     this.player.x = Math.max(this.player.radius, Math.min(this.canvas.width - this.player.radius, this.player.x));

@@ -77,6 +77,18 @@ h1 {
   color: black !important;
 }
 
+#upgradeBtn {
+  border-color: #00ff00 !important;
+  color: #00ff00 !important;
+  background-color: rgba(0, 40, 0, 0.8) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.2) !important;
+}
+
+#upgradeBtn:hover {
+  background-color: #00ff00 !important;
+  color: black !important;
+}
+
 #muteBtn {
   border-color: #ffffff !important;
   color: #ffffff !important;
@@ -283,6 +295,28 @@ h1 {
   padding: 10px 20px !important;
   width: auto !important;
   margin: 0 !important;
+}
+
+/* Color Customization */
+.color-presets {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 5px 0;
+}
+
+.color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #555;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.color-swatch:hover {
+  transform: scale(1.15);
+  border-color: white;
 }
 
 /* Leaderboard Overhaul */

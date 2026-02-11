@@ -18,7 +18,9 @@ let labelContainer;
 const startBtn = document.getElementById("startBtn");
 const stopBtn = document.getElementById("stopBtn");
 
-// gameEngine is already declared globally
+// 1. GameEngine 초기화 (Pre-initialize for Store/Upgrades access)
+let gameLoopStarted = false;
+gameEngine = new GameEngine();
 let lastTime = 0;
 let animationFrameId;
 
@@ -26,8 +28,6 @@ async function init() {
   startBtn.disabled = true;
 
   try {
-    // 1. GameEngine 초기화
-    gameEngine = new GameEngine();
     gameEngine.start();
 
     // 2. 키보드 이벤트 리스너 -> GameEngine에 연결
