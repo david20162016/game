@@ -7,6 +7,10 @@ class AuthManager {
     constructor() {
         this.USERS_KEY = "circleSurvivor_users";
         this.CURRENT_USER_KEY = "circleSurvivor_currentUser";
+        this.loadUsers();
+    }
+
+    loadUsers() {
         this.users = JSON.parse(localStorage.getItem(this.USERS_KEY) || "{}");
         this.currentUser = localStorage.getItem(this.CURRENT_USER_KEY) || null;
     }
@@ -18,6 +22,7 @@ class AuthManager {
      * @returns {boolean}
      */
     register(username, password) {
+        this.loadUsers();
         if (this.users[username]) {
             alert("Username already exists!");
             return false;
@@ -44,6 +49,7 @@ class AuthManager {
      * @returns {boolean}
      */
     login(username, password) {
+        this.loadUsers();
         const user = this.users[username];
         if (user && user.password === password) {
             this.currentUser = username;
@@ -69,6 +75,7 @@ class AuthManager {
      */
     saveUserData(data) {
         if (!this.currentUser) return;
+        this.loadUsers();
         this.users[this.currentUser] = {
             ...this.users[this.currentUser],
             ...data

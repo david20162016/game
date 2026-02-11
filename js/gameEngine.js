@@ -183,6 +183,15 @@ class GameEngine {
     this.scores.sort((a, b) => b.score - a.score); // Descending
     this.scores = this.scores.slice(0, 5); // Keep top 5
     localStorage.setItem("circleSurvivorLeaderboard", JSON.stringify(this.scores));
+
+    // Update user's personal high score
+    if (window.authManager && window.authManager.currentUser) {
+      const userData = window.authManager.getUserData();
+      if (score > (userData.highScore || 0)) {
+        window.authManager.saveUserData({ highScore: score });
+      }
+    }
+
     this.updateLeaderboardUI();
   }
 

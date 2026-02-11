@@ -75,12 +75,40 @@ function initializeGame() {
   gameEngine = new GameEngine();
 }
 
-// Auto-login check
+// Auto-login check & Event listeners
 window.onload = () => {
+  // Pre-fill last username
+  const lastUser = localStorage.getItem("circleSurvivor_currentUser");
+  if (lastUser) {
+    const loginInput = document.getElementById('login-username');
+    if (loginInput) loginInput.value = lastUser;
+  }
+
   if (authManager.currentUser) {
     finishAuth();
   }
 };
+
+// Cross-tab Synchronization
+window.addEventListener('storage', (event) => {
+  if (event.key === 'circleSurvivor_currentUser') {
+    // Login/Logout change in another tab
+    window.location.reload();
+  }
+  if (event.key === 'circleSurvivor_users') {
+    // Data change in another tab
+    if (authManager) authManager.loadUsers();
+    // If game is active, update current engine stats
+    if (gameEngine && authManager.currentUser) {
+      const userData = authManager.getUserData();
+      if (userData) {
+        gameEngine.coins = userData.coins || 0;
+        gameEngine.inventory = userData.inventory || gameEngine.inventory;
+        gameEngine.updateStoreUI();
+      }
+    }
+  }
+});
 
 async function init() {
   if (!authManager.currentUser) {
